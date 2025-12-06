@@ -1,27 +1,40 @@
-from rest_framework import serializers
 from django.contrib.auth.models import User
+from rest_framework import serializers
 from .models import Subject, UserProfile, StudyGroup, Resource
 
 # --- Basic Serializers for Nesting ---
+# --- New: User Registration Serializer ---
+class UserRegisterSerializer(serializers.ModelSerializer):
+    password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
+    
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'password2']
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'email': {'required': True}
+        }
 
+    def validate(self, data):
+        if data['password'] != data['password2']:
+            raise serializers.ValidationError({"password": "Passwords must match."})
+        return data
+
+    def create(self, validated_data):
+        # Create the User object
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password']
+        )
+        # REMOVED: UserProfile.objects.create(user=user) - This is now handled by the signal.
+        return user
 class SubjectSerializer(serializers.ModelSerializer):
     """Serializer for the Subject model."""
     class Meta:
         model = Subject
         fields = ['id', 'name']
-        read_only_fields = ['id']
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    """Used to display a user's interests."""
-    username = serializers.CharField(source='user.username', read_only=True)
-    
-    # Nest subjects to show the actual names, not just IDs
-    subjects = SubjectSerializer(many=True, read_only=True)
-    
-    class Meta:
-        model = UserProfile
-        fields = ['username', 'subjects']
+        read_only_fields = ['id', 'name']
 
 
 class ResourceSerializer(serializers.ModelSerializer):
@@ -39,23 +52,15 @@ class ResourceSerializer(serializers.ModelSerializer):
 class StudyGroupSerializer(serializers.ModelSerializer):
     """Serializer for the StudyGroup model, with nesting for read operations."""
     
-    # Display subjects using the nested serializer
     subjects = SubjectSerializer(many=True, read_only=True)
-    
-    # Display member usernames instead of just IDs
-    # Using SlugRelatedField is cleaner than nesting a full User serializer
     members = serializers.SlugRelatedField(
         many=True,
         read_only=True,
         slug_field='username'
     )
     
-    # Read-only field for the creator's username
     created_by_username = serializers.CharField(source='created_by.username', read_only=True)
-    
-    # Nested field to display all resources associated with the group
     resources = ResourceSerializer(source='resource_set', many=True, read_only=True)
-
 
     class Meta:
         model = StudyGroup
@@ -67,19 +72,18 @@ class StudyGroupSerializer(serializers.ModelSerializer):
         read_only_fields = ['created_by_username', 'members', 'resources']
     
     def create(self, validated_data):
-        """Override create to automatically assign the creator (created_by) and add them to members."""
+        """Override create to automatically assign the creator and add them to members."""
         user = self.context['request'].user
         validated_data['created_by'] = user
         
-        # Create the group instance
         group = StudyGroup.objects.create(**validated_data)
         
-        # Add the creator to the members list (M2M must be set after creation)
+        # Add the creator to the members list
         group.members.add(user)
         return group
 
 
-# --- Serializer for User Matching (Simplified) ---
+# --- Serializer for User Matching ---
 
 class UserMatchSerializer(serializers.ModelSerializer):
     """Simplified serializer for listing matching users."""

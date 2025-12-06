@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User 
-
+from django.db.models.signals import post_save # <-- NEW: Import signal
+from django.dispatch import receiver # <-- NEW: Import receiver
 # Create your models here.
 # --- 1. Subject Model ---
 class Subject(models.Model):
@@ -85,3 +86,14 @@ class Resource(models.Model):
         
     class Meta:
         ordering = ['-created_at']
+
+@receiver(post_save, sender=User)
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    """
+    Automatically creates a UserProfile when a new User is created.
+    Also ensures the profile is saved if the User is updated.
+    """
+    if created:
+        UserProfile.objects.create(user=instance)
+    # If the user is being updated, save the profile too (optional, but robust)
+    # instance.profile.save() # Uncomment if you want to ensure profile saves on user update

@@ -4,7 +4,10 @@ from .views import (
     SubjectViewSet, 
     StudyGroupViewSet, 
     ResourceListCreateAPIView, 
-    UserMatchAPIView
+    UserMatchAPIView,
+    UserRegisterView,
+    UserLoginView,
+    UserLogoutView,
 )
 
 # Use a router for ViewSets (automatic URL generation for CRUD)
@@ -14,7 +17,11 @@ router.register(r'groups', StudyGroupViewSet) # /api/groups/
 
 urlpatterns = [
     # Router URLs (Subjects, Groups, Groups Join/Leave)
-    path('', include(router.urls)), 
+    path('', include(router.urls)),
+     # --- NEW: Authentication Endpoints ---
+    path('register/', UserRegisterView.as_view(), name='user-register'),
+    path('login/', UserLoginView.as_view(), name='user-login'),
+    path('logout/', UserLogoutView.as_view(), name='user-logout'), 
 
     # Resource Endpoints (ListCreateAPIView)
     path('resources/', ResourceListCreateAPIView.as_view(), name='resource-list-create'),

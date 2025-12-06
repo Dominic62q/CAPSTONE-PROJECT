@@ -1,66 +1,108 @@
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
 from rest_framework import viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework import permissions
-
-from django.contrib.auth.models import User
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
-from django.db.models import Q # Used for complex filtering
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from rest_framework.permissions import AllowAny
+
 
 from .models import Subject, UserProfile, StudyGroup, Resource
 from .serializers import (
     SubjectSerializer, 
     StudyGroupSerializer, 
     ResourceSerializer, 
-    UserMatchSerializer
+    UserMatchSerializer,
+    UserRegisterSerializer,
 )
 from .permissions import IsGroupOwnerOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
 
-# --- Filters ---
-class StudyGroupFilter(DjangoFilterBackend):
-    """Custom filter to allow filtering groups by subject ID."""
-    filter_fields = ['subjects']
-    model = StudyGroup
+# --- NEW: Authentication Views ---
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UserRegisterView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = UserRegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({"message": "User registered successfully"}, status=201)
+        return Response(serializer.errors, status=400)
+
+
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class UserLoginView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        username = request.data.get("username")
+        password = request.data.get("password")
+        user = authenticate(username=username, password=password)
+        
+        if user:
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({"token": token.key, "username": user.username})
+        
+        return Response({"error": "Invalid credentials"}, status=400)
+
+
+
+
+class UserLogoutView(APIView):
+    """POST /api/logout/ - Deletes the user's current token, requiring a new login."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        # Delete the user's token (logs them out)
+        request.user.auth_token.delete()
+        return Response(
+            {'detail': 'Successfully logged out.'}, 
+            status=status.HTTP_200_OK
+        )
+
 
 # --- 1. Subject ViewSet (Public Read-Only) ---
 class SubjectViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    GET /api/subjects/ - List all subjects.
-    No authentication needed (Overridden by permission_classes).
+    GET /api/subjects/ - Returns a list of all subjects (Public).
     """
     queryset = Subject.objects.all().order_by('name')
     serializer_class = SubjectSerializer
-    # Overriding global default: Subjects are public read-only
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
 
 # --- 2. Resource ViewSet (Public Read List, Authenticated Create) ---
 class ResourceListCreateAPIView(generics.ListCreateAPIView):
     """
     GET /api/resources/ - List all resources (Public).
-    POST /api/resources/ - Create a resource (Authenticated).
+    POST /api/resources/ - Create a resource (Authenticated, requires membership).
     """
     queryset = Resource.objects.select_related('group', 'uploaded_by').all()
     serializer_class = ResourceSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['group'] # Allows filtering by group ID: ?group=1
+    filterset_fields = ['group'] 
 
     def get_permissions(self):
-        """Allows GET to be public, but POST requires authentication."""
+        # Public GET, Authenticated POST
         if self.request.method == 'GET':
-            return [permissions.AllowAny()]
+            return [AllowAny()]
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):
-        """Automatically assigns the uploaded_by field."""
         group_id = serializer.validated_data.get('group').id
         group = get_object_or_404(StudyGroup, pk=group_id)
 
-        # Ensure the user is authenticated and is a member of the group before posting
+        # Custom validation: User must be a member of the group before posting
         if self.request.user not in group.members.all():
-             raise serializers.ValidationError("You must be a member of this group to post resources.")
+             raise serializers.ValidationError({"group": "You must be a member of this group to post resources."})
 
         serializer.save(uploaded_by=self.request.user)
 
@@ -70,16 +112,15 @@ class StudyGroupViewSet(viewsets.ModelViewSet):
     """
     Handles CRUD for groups, plus the custom 'join' and 'leave' actions.
     """
-    queryset = StudyGroup.objects.prefetch_related('subjects', 'members').all()
+    queryset = StudyGroup.objects.prefetch_related('subjects', 'members', 'resource_set').all()
     serializer_class = StudyGroupSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['subjects'] # Allows filtering groups by subject ID: ?subjects=1
-    permission_classes = [IsGroupOwnerOrReadOnly] # Use custom permission for ownership checks
-
+    filterset_fields = ['subjects'] # Filter by subject ID: ?subjects=1
+    
     def get_permissions(self):
-        """Allows LIST (GET) to be public, but all others are protected."""
-        if self.action == 'list':
-            return [permissions.AllowAny()]
+        # Public GET list, Authenticated GET retrieve, Protected CUD
+        if self.action == 'list' or self.action == 'retrieve':
+            return [AllowAny()]
         return [IsAuthenticated(), IsGroupOwnerOrReadOnly()]
 
 
@@ -88,6 +129,10 @@ class StudyGroupViewSet(viewsets.ModelViewSet):
     def join(self, request, pk=None):
         """Adds the authenticated user to the members of the group."""
         group = get_object_or_404(StudyGroup, pk=pk)
+        
+        if request.user in group.members.all():
+            return Response({'error': 'User is already a member.'}, status=status.HTTP_400_BAD_REQUEST)
+
         group.members.add(request.user)
         return Response({'status': f'Successfully joined {group.name}'})
 
@@ -97,7 +142,7 @@ class StudyGroupViewSet(viewsets.ModelViewSet):
         """Removes the authenticated user from the members of the group."""
         group = get_object_or_404(StudyGroup, pk=pk)
         
-        # Prevent the user from leaving if they are the creator
+        # Prevent the owner from leaving
         if group.created_by == request.user:
             return Response(
                 {'error': 'Owner cannot leave the group. Transfer ownership first.'},
@@ -111,16 +156,15 @@ class StudyGroupViewSet(viewsets.ModelViewSet):
 # --- 4. User Matching View (Unique Feature) ---
 class UserMatchAPIView(generics.ListAPIView):
     """
-    GET /api/matches/
-    Lists users who share at least one subject interest with the authenticated user.
+    GET /api/matches/ - Lists users who share at least one subject interest (Protected).
     """
     serializer_class = UserMatchSerializer
-    permission_classes = [IsAuthenticated] # Must be authenticated to check for matches
+    permission_classes = [IsAuthenticated] # Requires authentication
 
     def get_queryset(self):
         user = self.request.user
         
-        # 1. Get the current user's subjects (if profile exists)
+        # User must have a profile and subjects defined to match
         try:
             user_profile = user.profile 
         except UserProfile.DoesNotExist:
@@ -129,16 +173,13 @@ class UserMatchAPIView(generics.ListAPIView):
         user_subjects = user_profile.subjects.all()
         
         if not user_subjects.exists():
-            return UserProfile.objects.none() # No interests, no matches
+            return UserProfile.objects.none()
         
-        # 2. Find other UserProfiles whose 'subjects' M2M field overlaps with the current user's subjects.
-        #    Use '__in' to filter profiles whose subjects are in the list of user_subjects.
-        #    We must exclude the current user.
+        # Find other profiles with overlapping subjects, exclude self, and optimize query
         queryset = UserProfile.objects.filter(
             subjects__in=user_subjects
         ).exclude(
             user=user
         ).distinct().select_related('user').prefetch_related('subjects') 
-        # select_related('user') and prefetch_related('subjects') are for optimization (N+1 fix)
 
-    
+        return queryset

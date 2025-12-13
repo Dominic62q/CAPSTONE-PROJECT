@@ -38,49 +38,52 @@ class SubjectSerializer(serializers.ModelSerializer):
 
 
 class ResourceSerializer(serializers.ModelSerializer):
-    """Serializer for Resource model."""
-    uploaded_by_username = serializers.CharField(source='uploaded_by.username', read_only=True)
-    
+    uploaded_by_username = serializers.CharField(
+        source='uploaded_by.username',
+        read_only=True
+    )
+
     class Meta:
         model = Resource
-        fields = ['id', 'title', 'link', 'group', 'uploaded_by_username', 'created_at']
+        fields = [
+            'id',
+            'title',
+            'file',
+            'link',
+            'group',
+            'uploaded_by_username',
+            'created_at'
+        ]
         read_only_fields = ['uploaded_by_username', 'created_at']
 
-
-# --- Core StudyGroup Serializer ---
-
+    
 class StudyGroupSerializer(serializers.ModelSerializer):
-    """Serializer for the StudyGroup model, with nesting for read operations."""
-    
-    subjects = SubjectSerializer(many=True, read_only=True)
-    members = serializers.SlugRelatedField(
-        many=True,
-        read_only=True,
-        slug_field='username'
+    created_by_username = serializers.CharField(
+        source='created_by.username',
+        read_only=True
     )
-    
-    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
-    resources = ResourceSerializer(source='resource_set', many=True, read_only=True)
 
     class Meta:
         model = StudyGroup
         fields = [
-            'id', 'name', 'description', 
-            'created_by_username', 'subjects', 
-            'members', 'resources'
+            'id',
+            'name',
+            'description',
+            'subjects',
+            'created_by_username',
+            'members',
+            'created_at',
         ]
-        read_only_fields = ['created_by_username', 'members', 'resources']
-    
+        read_only_fields = ['created_by_username', 'members', 'created_at']
+
     def create(self, validated_data):
-        """Override create to automatically assign the creator and add them to members."""
         user = self.context['request'].user
         validated_data['created_by'] = user
-        
+
         group = StudyGroup.objects.create(**validated_data)
-        
-        # Add the creator to the members list
         group.members.add(user)
         return group
+
 
 
 # --- Serializer for User Matching ---

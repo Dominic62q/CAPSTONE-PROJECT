@@ -64,28 +64,21 @@ class StudyGroup(models.Model):
 
 # --- 4. Resource Model (Corresponds to UserGroup in ERD) ---
 class Resource(models.Model):
-    """
-    A link or document shared within a specific study group (UserGroup in the ERD).
-    """
-    # The group this resource belongs to (ForeignKey)
     group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE)
-    
-    # The user who uploaded the resource (ForeignKey)
-    uploaded_by = models.ForeignKey(
-        User, 
-        on_delete=models.SET_NULL, 
-        null=True
-    )
-    
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
     title = models.CharField(max_length=255)
-    link = models.URLField(max_length=500)
+
+    # NEW: File upload (PDF, DOCX, PPTX, etc.)
+    file = models.FileField(upload_to='resources/files/', null=True, blank=True)
+
+    # OPTIONAL: Still allow links if user wants
+    link = models.URLField(max_length=500, null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     def __str__(self):
         return self.title
-        
-    class Meta:
-        ordering = ['-created_at']
 
 @receiver(post_save, sender=User)
 def create_or_update_user_profile(sender, instance, created, **kwargs):

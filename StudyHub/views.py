@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 from .models import Subject, UserProfile, StudyGroup, Resource
@@ -81,14 +82,9 @@ class SubjectViewSet(viewsets.ReadOnlyModelViewSet):
 
 # --- 2. Resource ViewSet (Public Read List, Authenticated Create) ---
 class ResourceListCreateAPIView(generics.ListCreateAPIView):
-    """
-    GET /api/resources/ - List all resources (Public).
-    POST /api/resources/ - Create a resource (Authenticated, requires membership).
-    """
     queryset = Resource.objects.select_related('group', 'uploaded_by').all()
     serializer_class = ResourceSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['group'] 
+    parser_classes = [MultiPartParser, FormParser]
 
     def get_permissions(self):
         # Public GET, Authenticated POST

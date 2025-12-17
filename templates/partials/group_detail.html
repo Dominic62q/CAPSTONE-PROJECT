@@ -1,0 +1,167 @@
+<div class="animate-[fadeIn_0.5s_ease-out] p-4 sm:p-0">
+    
+    <div class="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+        <button 
+            hx-get="/api/groups/" 
+            hx-target="#main-content" 
+            hx-swap="innerHTML"
+            class="text-brand-500 hover:text-brand-400 flex items-center gap-2 text-sm font-semibold transition-colors"
+        >
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Discovery
+        </button>
+        
+        <div id="join-leave-container">
+            {% include 'partials/join_leave_button.html' with group=group is_member=is_member %}
+        </div>
+    </div>
+
+    <div class="glass p-8 rounded-2xl shadow-xl mb-8">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-4xl font-extrabold text-white mb-2">{{ group.name }}</h1>
+                <p class="text-gray-400 mb-6 max-w-3xl">{{ group.description }}</p>
+                
+                <div class="flex flex-wrap gap-4 items-center text-sm">
+                    <span class="flex items-center gap-1 text-gray-300">
+                        <i data-lucide="users" class="w-4 h-4 text-brand-500"></i>
+                        {{ group.members.count }} Members
+                    </span>
+                    <span class="flex items-center gap-1 text-gray-300">
+                        <i data-lucide="award" class="w-4 h-4 text-purple-400"></i>
+                        Owner: {{ group.created_by.username }}
+                    </span>
+                </div>
+
+                <div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/10">
+                    {% for subject in group.subjects.all %}
+                        <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-900/30 text-blue-300 border border-blue-800/50">
+                            {{ subject.name }}
+                        </span>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            {% if not is_member %}
+            <div class="hidden sm:flex flex-col items-center justify-center p-4 bg-dark-900/50 rounded-xl border border-white/10">
+                <i data-lucide="lock" class="w-8 h-8 text-gray-500 mb-2"></i>
+                <span class="text-xs text-gray-400 font-mono">PRIVATE GROUP</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if is_member %}
+    
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-[fadeIn_0.5s_ease-out]">
+            
+            <div class="lg:col-span-2 space-y-8">
+
+                <div class="glass p-6 rounded-xl border-white/10">
+                    <h3 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                        <i data-lucide="upload-cloud" class="w-5 h-5 text-green-400"></i> Upload Resource
+                    </h3>
+                    
+                    <form id="upload-form" hx-post="/api/resources/" 
+                        hx-target="#resource-list-container" 
+                        hx-swap="afterbegin"
+                        hx-encoding="multipart/form-data" 
+                        class="space-y-4"
+                    >
+                        {% csrf_token %}
+                        <input type="hidden" name="group" value="{{ group.id }}">
+                        
+                        <div>
+                            <input type="text" name="title" placeholder="Title (e.g., 'Chapter 5 Notes')" required
+                                class="w-full px-4 py-3 bg-dark-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                        </div>
+                        
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <label class="block w-full">
+                                <input type="file" name="file" class="w-full text-sm text-gray-500
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-full file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-brand-500/20 file:text-brand-300
+                                    hover:file:bg-brand-500/30 cursor-pointer transition-colors"
+                                >
+                            </label>
+                            <input type="url" name="link" placeholder="Or provide a link (optional)"
+                                class="w-full px-4 py-3 bg-dark-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                        </div>
+                        
+                        <button type="submit" class="px-6 py-2 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg transition-colors">
+                            Add Resource
+                        </button>
+                    </form>
+                </div>
+
+                <div>
+                    <h3 class="text-2xl font-bold text-white mb-4">Resources ({{ resources.count }})</h3>
+                    <div id="resource-list-container" class="space-y-4">
+                        {% for resource in resources %}
+                            {% include 'partials/resource_row.html' with resource=resource %}
+                        {% empty %}
+                            <p class="text-gray-500 py-10 text-center border border-dashed border-gray-700 rounded-xl">No resources uploaded yet.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-1">
+                <div class="glass p-6 rounded-2xl border-white/10 sticky top-24">
+                    <h3 class="text-2xl font-bold text-white mb-4">Group Members</h3>
+                    <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                        {% for member in group.members.all %}
+                            <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                                <div class="w-10 h-10 rounded-full bg-brand-500/20 border border-brand-500 flex items-center justify-center text-sm font-bold text-brand-300 shadow-md">
+                                    {{ member.username|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-white">{{ member.username }}</p>
+                                    {% if member == group.created_by %}
+                                        <span class="text-xs font-medium text-purple-400">Group Owner</span>
+                                    {% else %}
+                                        <span class="text-xs text-gray-500">Member</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    {% else %}
+        
+        <div class="flex flex-col items-center justify-center py-20 text-center animate-[fadeIn_0.5s_ease-out]">
+            <div class="w-20 h-20 bg-dark-800 rounded-full flex items-center justify-center mb-6 border border-gray-700 shadow-2xl">
+                <i data-lucide="lock" class="w-10 h-10 text-gray-500"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-white mb-2">This Group is Private</h2>
+            <p class="text-gray-400 max-w-md mb-8">Join this group to access {{ resources.count }} shared resources and connect with {{ group.members.count }} other students.</p>
+            
+            <div id="join-leave-container-large">
+                <button 
+                    hx-post="/api/groups/{{ group.id }}/join/" 
+                    hx-target="#main-content" 
+                    hx-swap="innerHTML"
+                    class="px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-bold text-lg transition-all shadow-lg transform hover:-translate-y-1 flex items-center gap-2"
+                >
+                    <i data-lucide="log-in" class="w-5 h-5"></i> Join Group to Access
+                </button>
+            </div>
+        </div>
+
+    {% endif %}
+    
+    <script>
+        lucide.createIcons();
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target.id === 'resource-list-container') {
+                document.getElementById('upload-form').reset();
+            }
+        });
+    </script>
+</div>

@@ -1,34 +1,28 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import (
-    SubjectViewSet, 
-    StudyGroupViewSet, 
-    ResourceListCreateAPIView, 
-    UserMatchAPIView,
-    UserRegisterView,
-    UserLoginView,
-    UserLogoutView,
-)
+from . import views  # <--- THIS IMPORT WAS MISSING
 
-# Use a router for ViewSets (automatic URL generation for CRUD)
+# Create a router and register our ViewSets with it.
 router = DefaultRouter()
-router.register(r'subjects', SubjectViewSet) # /api/subjects/
-router.register(r'groups', StudyGroupViewSet) # /api/groups/
+router.register(r'subjects', views.SubjectViewSet, basename='subject')
+router.register(r'groups', views.StudyGroupViewSet, basename='studygroup')
+# Note: Resources, Matches, Profile, and Auth are APIViews/Generics, so they go in urlpatterns below.
 
 urlpatterns = [
-    # Router URLs (Subjects, Groups, Groups Join/Leave)
+    # Router URLs (Groups & Subjects)
     path('', include(router.urls)),
-     # --- NEW: Authentication Endpoints ---
-    path('register/', UserRegisterView.as_view(), name='user-register'),
-    path('login/', UserLoginView.as_view(), name='user-login'),
-    path('logout/', UserLogoutView.as_view(), name='user-logout'), 
 
-    # Resource Endpoints (ListCreateAPIView)
-    path('resources/', ResourceListCreateAPIView.as_view(), name='resource-list-create'),
+    # Authentication
+    path('register/', views.UserRegisterView.as_view(), name='register'),
+    path('login/', views.UserLoginView.as_view(), name='login'),
+    path('logout/', views.UserLogoutView.as_view(), name='logout'),
 
-    # User Matching Endpoint (Custom APIView)
-    path('matches/', UserMatchAPIView.as_view(), name='user-match'),
+    # Resources (List & Create)
+    path('resources/', views.ResourceListCreateAPIView.as_view(), name='resource-list'),
 
-    # DRF Login/Logout (Optional, for browsable API)
-    path('auth/', include('rest_framework.urls', namespace='rest_framework')),
+    # User Matching (Find a Buddy)
+    path('matches/', views.UserMatchAPIView.as_view(), name='user-matches'),
+
+    # User Profile (The new page)
+    path('profile/', views.UserProfileView.as_view(), name='user-profile'),
 ]

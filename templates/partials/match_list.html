@@ -1,0 +1,53 @@
+<div class="animate-[fadeIn_0.5s_ease-out]">
+    
+    <div class="mb-8 border-b border-white/10 pb-4">
+        <h2 class="text-3xl font-bold text-white">Study Buddies</h2>
+        <p class="text-gray-400 mt-1">Students who are studying the same subjects as you.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for profile in matches %}
+        <div class="glass p-6 rounded-2xl border border-white/10 hover:border-brand-500/50 transition-all hover:-translate-y-1 group relative overflow-hidden">
+            
+            <div class="absolute top-0 right-0 w-24 h-24 bg-brand-500/10 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+
+            <div class="relative z-10 flex items-start justify-between mb-4">
+                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-xl font-bold text-white shadow-lg">
+                    {{ profile.username|slice:":1"|upper }}
+                </div>
+                <button class="text-xs font-semibold bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-brand-300 transition-colors">
+                    Connect
+                </button>
+            </div>
+
+            <h3 class="text-xl font-bold text-white mb-1">{{ profile.username }}</h3>
+            <p class="text-sm text-gray-500 mb-4">Matches your interests</p>
+
+            <div class="flex flex-wrap gap-2">
+                {% for subject in profile.subjects.all|slice:":4" %}
+                    <span class="px-2 py-1 rounded text-xs font-medium bg-dark-900 border border-gray-700 text-gray-300">
+                        {{ subject.name }}
+                    </span>
+                {% endfor %}
+                {% if profile.subjects.count > 4 %}
+                    <span class="px-2 py-1 rounded text-xs font-medium bg-dark-900 border border-gray-700 text-gray-500">
+                        +{{ profile.subjects.count|add:"-4" }} more
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-20">
+            <div class="inline-block p-4 rounded-full bg-dark-800 mb-4">
+                <i data-lucide="frown" class="w-8 h-8 text-gray-500"></i>
+            </div>
+            <p class="text-gray-400 text-lg">No matches found yet.</p>
+            <p class="text-gray-600 text-sm">Try adding more subjects to your profile!</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</div>

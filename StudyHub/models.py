@@ -47,7 +47,7 @@ class StudyGroup(models.Model):
     )
     
     # Subjects the group covers (ManyToMany)
-    subjects = models.ManyToManyField(Subject)
+    subjects = models.ManyToManyField(Subject, blank=True)
     
     # Members of the group (ManyToMany, including the creator)
     members = models.ManyToManyField(

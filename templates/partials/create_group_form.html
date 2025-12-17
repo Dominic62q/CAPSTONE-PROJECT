@@ -1,0 +1,63 @@
+<div class="max-w-2xl mx-auto animate-[fadeIn_0.5s_ease-out]">
+    
+    <button 
+        hx-get="/api/groups/" 
+        hx-target="#main-content" 
+        hx-swap="innerHTML"
+        class="text-gray-400 hover:text-white flex items-center gap-2 text-sm font-semibold mb-6 transition-colors"
+    >
+        <i data-lucide="arrow-left" class="w-4 h-4"></i> Cancel & Back
+    </button>
+
+    <div class="glass p-8 rounded-2xl shadow-2xl border border-white/10">
+        <h2 class="text-3xl font-bold text-white mb-2">Start a New Group</h2>
+        <p class="text-gray-400 mb-8">Create a space for students to collaborate and share resources.</p>
+
+        <form hx-post="/api/groups/" hx-target="#main-content" hx-swap="innerHTML" class="space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Group Name</label>
+                <input type="text" name="name" required placeholder="e.g. Advanced Calculus Study Squad" 
+                       value="{{ data.name|default:'' }}"
+                       class="w-full px-4 py-3 bg-dark-900 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
+                {% if errors.name %}
+                    <p class="text-red-400 text-sm mt-1">{{ errors.name.0 }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                <textarea name="description" rows="4" placeholder="What is this group about?"
+                          class="w-full px-4 py-3 bg-dark-900 border border-gray-700 rounded-lg text-white placeholder-gray-600 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">{{ data.description|default:'' }}</textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-2">
+                    Related Subjects <span class="text-gray-500 font-normal">(Optional)</span>
+                </label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-48 overflow-y-auto p-4 bg-dark-900 rounded-lg border border-gray-700">
+                    {% for subject in subjects %}
+                    <label class="flex items-center space-x-3 cursor-pointer p-2 rounded hover:bg-white/5 transition-colors">
+                        <input type="checkbox" name="subjects" value="{{ subject.id }}" class="form-checkbox h-5 w-5 text-brand-500 rounded border-gray-600 bg-dark-800 focus:ring-brand-500 focus:ring-offset-dark-900">
+                        <span class="text-gray-300 text-sm">{{ subject.name }}</span>
+                    </label>
+                    {% empty %}
+                    <p class="text-gray-500 text-sm col-span-3">No subjects available yet.</p>
+                    {% endfor %}
+                </div>
+                <p class="text-xs text-gray-500 mt-2">You can add these later if you're not sure yet.</p>
+            </div>
+
+            <div class="pt-4 border-t border-white/10 flex justify-end">
+                <button type="submit" class="px-8 py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-lg shadow-lg flex items-center gap-2 transition-all transform hover:-translate-y-1">
+                    <i data-lucide="check-circle" class="w-5 h-5"></i> Create Group
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</div>

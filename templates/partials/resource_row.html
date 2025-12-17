@@ -1,0 +1,31 @@
+<div class="flex items-center justify-between p-4 bg-dark-800 border border-gray-700 rounded-lg shadow-md hover:shadow-lg hover:border-brand-500/50 transition-all duration-200" id="resource-{{ resource.id }}">
+    
+    <div class="flex items-center gap-4">
+        {% if resource.file %}
+            <i data-lucide="file-text" class="w-6 h-6 text-brand-500"></i>
+        {% elif resource.link %}
+            <i data-lucide="link" class="w-6 h-6 text-green-500"></i>
+        {% else %}
+            <i data-lucide="file" class="w-6 h-6 text-gray-500"></i>
+        {% endif %}
+
+        <div>
+            <p class="font-semibold text-white">{{ resource.title }}</p>
+            <p class="text-xs text-gray-500">
+                Uploaded by {{ resource.uploaded_by.username }} on {{ resource.created_at|date:"M d, Y" }}
+            </p>
+        </div>
+    </div>
+
+    <div class="flex gap-3">
+        {% if resource.file %}
+        <a href="{{ resource.file.url }}" target="_blank" class="text-sm px-3 py-1 rounded bg-brand-600 hover:bg-brand-500 text-white transition-colors flex items-center gap-1">
+            <i data-lucide="download" class="w-4 h-4"></i> Download
+        </a>
+        {% elif resource.link %}
+        <a href="{{ resource.link }}" target="_blank" class="text-sm px-3 py-1 rounded bg-green-600 hover:bg-green-500 text-white transition-colors flex items-center gap-1">
+            <i data-lucide="external-link" class="w-4 h-4"></i> View Link
+        </a>
+        {% endif %}
+    </div>
+</div>

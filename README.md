@@ -1,2 +1,20 @@
-The Project Idea Project Title: StudyHub API – Collaborative Study Group & Resource Finder Concept: StudyHub is a backend-focused web application designed to solve the isolation students often face when studying complex subjects. Instead of searching blindly for help, this platform connects authenticated users based on shared academic interests, allowing them to form study groups and curate shared learning resources. Core Value Proposition: The application uses a relational database approach to match users to groups not just by name, but by specific "Subjects" of interest. It moves beyond simple data storage to provide interaction logic, such as joining groups, filtering by interest, and securely managing resource ownership.
-Main Features User Management & Interests: ● Users can register and create a profile. ● Users can tag themselves with specific Subjects (e.g., "Python," "Calculus," "History") to define their academic interests. Study Group Collaboration: ● Group Creation: Users can start new study groups focused on specific subjects. ● Membership Logic: Users can join or leave existing groups. ● Role Management: The creator of a group has special permissions (e.g., updating the group description). Resource Sharing: ● Members can upload Resources (URLs to articles, videos, or documents) to specific study groups. ● Resources are automatically linked to the uploader and the group for easy tracking. Smart Matching & Filtering: ● Interest Matching: A specific feature that allows a user to see other users who share their specific subject interests. ● Filtering: Users can filter the list of study groups by Subject to find relevant communities quickly.
+1. The Project Idea
+Project Title: StudyHub API – Collaborative Study Group & Resource Finder
+Concept:
+StudyHub is a backend-focused web application designed to solve the isolation students often face when studying complex subjects. Instead of searching blindly for help, this platform connects authenticated users based on shared academic interests, allowing them to form study groups and curate shared learning resources.
+Core Value Proposition:
+The application uses a relational database approach to match users to groups not just by name, but by specific "Subjects" of interest. It moves beyond simple data storage to provide interaction logic, such as joining groups, filtering by interest, and securely managing resource ownership.
+2. Main Features
+User Management & Interests:
+●	Users can register and create a profile.
+●	Users can tag themselves with specific Subjects (e.g., "Python," "Calculus," "History") to define their academic interests.
+Study Group Collaboration:
+●	Group Creation: Users can start new study groups focused on specific subjects.
+●	Membership Logic: Users can join or leave existing groups.
+●	Role Management: The creator of a group has special permissions (e.g., updating the group description).
+Resource Sharing:
+●	Members can upload Resources (URLs to articles, videos, or documents) to specific study groups.
+●	Resources are automatically linked to the uploader and the group for easy tracking.
+Smart Matching & Filtering:
+●	Interest Matching: A specific feature that allows a user to see other users who share their specific subject interests.
+●	Filtering: Users can filter the list of study groups by Subject to find relevant communities quickly.

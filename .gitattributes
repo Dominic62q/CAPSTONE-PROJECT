@@ -1,0 +1,8 @@
+# Default behavior for all files
+* text=auto
+
+# Force build.sh to ALWAYS use Linux line endings (Critical for Render)
+build.sh text eol=lf
+
+# Optional: Force Python files to use Linux endings too (Cleanest)
+*.py text eol=lf
